@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -14,15 +15,18 @@ class _HomeConverState extends State<HomeConver> {
   final realControl = TextEditingController();
   final dolarControl = TextEditingController();
   final euroControl = TextEditingController();
+  final bitcoinControl = TextEditingController();
 
   double dolar = 0;
   double euro = 0;
+  double bitcoin = 0;
 
   @override
   void dispose() {
     realControl.dispose();
     dolarControl.dispose();
     euroControl.dispose();
+    bitcoinControl.dispose();
     super.dispose();
   }
 
@@ -39,28 +43,32 @@ class _HomeConverState extends State<HomeConver> {
               if (snapshot.connectionState == ConnectionState.done) {
                 dolar = double.parse(snapshot.data!['USDBRL']['bid']);
                 euro = double.parse(snapshot.data!['EURBRL']['bid']);
+                bitcoin = double.parse(snapshot.data!['BTCBRL']['bid']);
                 // dolar = snapshot.data!['USD']['buy'];
                 // euro = snapshot.data!['EUR']['buy'];
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.only(top: 15, left: 10, right: 10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      const Icon(
-                        Icons.monetization_on_outlined,
-                        size: 120,
-                      ),
-                      const SizedBox(height: 20),
-                      currencyTextField(
-                          'reais ', 'R\$ ', realControl, _convertReal),
-                      const SizedBox(height: 20),
-                      currencyTextField(
-                          'Dolares', 'US\$ ', dolarControl, _convertDolar),
-                      const SizedBox(height: 20),
-                      currencyTextField(
-                          'Euros', '€ ', euroControl, _convertEuro),
-                    ],
-                  ),
+                return SingleChildScrollView  (
+                    padding: const EdgeInsets.only(top: 15, left: 10, right: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        const Icon(
+                          Icons.monetization_on_outlined,
+                          size: 120,
+                        ),
+                        const SizedBox(height: 20),
+                        currencyTextField(
+                            'reais ', 'R\$ ', realControl, _convertReal),
+                        const SizedBox(height: 20),
+                        currencyTextField(
+                            'Dolares', 'US\$ ', dolarControl, _convertDolar),
+                        const SizedBox(height: 20),
+                        currencyTextField(
+                            'Euros', '€ ', euroControl, _convertEuro),
+                        const SizedBox(height: 20),
+                        currencyTextField(
+                            'Bitcoin', '₿ ', bitcoinControl, _convertBitcoin),
+                      ],
+                    ),
                 );
               } else {
                 return waitingIndicator();
@@ -83,6 +91,9 @@ class _HomeConverState extends State<HomeConver> {
       ),
       onChanged: (value) => f(value),
       keyboardType: TextInputType.number,
+      inputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+      ],
     );
   }
 
@@ -92,6 +103,15 @@ class _HomeConverState extends State<HomeConver> {
     );
   }
 
+  int _defineDecimalBitcoin(var valueWithDecimal){
+    var valueStr =  valueWithDecimal.toString().split('.');
+    String value = valueStr.length > 1 ? valueStr[1] : "0";
+    if(valueWithDecimal >= 1 || valueWithDecimal == 0){
+      return 2;
+    }else{
+      return value.length >= 21 ?  20 : value.length;
+    }
+  }
   void _convertReal(String text) {
     if (text.trim().isEmpty) {
       _clearFields();
@@ -101,6 +121,7 @@ class _HomeConverState extends State<HomeConver> {
     double real = double.parse(text);
     dolarControl.text = (real / dolar).toStringAsFixed(2);
     euroControl.text = (real / euro).toStringAsFixed(2);
+    bitcoinControl.text = (real/bitcoin).toStringAsFixed(_defineDecimalBitcoin(real/bitcoin));
   }
 
   void _convertDolar(String text) {
@@ -112,6 +133,7 @@ class _HomeConverState extends State<HomeConver> {
     double dolar = double.parse(text);
     realControl.text = (this.dolar * dolar).toStringAsFixed(2);
     euroControl.text = ((this.dolar * dolar) / euro).toStringAsFixed(2);
+    bitcoinControl.text = ((this.dolar * dolar) / bitcoin).toStringAsFixed(6);
   }
 
   void _convertEuro(String text) {
@@ -123,12 +145,25 @@ class _HomeConverState extends State<HomeConver> {
     double euro = double.parse(text);
     realControl.text = (this.euro * euro).toStringAsFixed(2);
     dolarControl.text = ((this.euro * euro) / dolar).toStringAsFixed(2);
+    bitcoinControl.text = ((this.euro * euro) / bitcoin).toStringAsFixed(6);
+  }
+  void _convertBitcoin(String text) {
+    if (text.trim().isEmpty) {
+      _clearFields();
+      return;
+    }
+
+    double bitcoin = double.parse(text);
+    realControl.text = (this.bitcoin * bitcoin).toStringAsFixed(2);
+    dolarControl.text = ((this.bitcoin * bitcoin) / dolar).toStringAsFixed(2);
+    euroControl.text = ((this.bitcoin * bitcoin) / euro).toStringAsFixed(2);
   }
 
   void _clearFields() {
     realControl.clear();
     dolarControl.clear();
     euroControl.clear();
+    bitcoinControl.clear();
   }
 }
 
@@ -137,7 +172,7 @@ Future<Map> getData() async {
   //* https://docs.awesomeapi.com.br/api-de-moedas
 
   const requestApi =
-      "https://economia.awesomeapi.com.br/json/last/USD-BRL,EUR-BRL";
+      "https://economia.awesomeapi.com.br/last/USD-BRL,EUR-BRL,BTC-BRL";
   var response = await http.get(Uri.parse(requestApi));
   return jsonDecode(response.body);
 
