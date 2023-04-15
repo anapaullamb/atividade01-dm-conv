@@ -133,7 +133,8 @@ class _HomeConverState extends State<HomeConver> {
     double dolar = double.parse(text);
     realControl.text = (this.dolar * dolar).toStringAsFixed(2);
     euroControl.text = ((this.dolar * dolar) / euro).toStringAsFixed(2);
-    bitcoinControl.text = ((this.dolar * dolar) / bitcoin).toStringAsFixed(6);
+    var convertBitcoin = (this.dolar * dolar) / bitcoin;
+    bitcoinControl.text = (convertBitcoin).toStringAsFixed(_defineDecimalBitcoin(convertBitcoin));
   }
 
   void _convertEuro(String text) {
@@ -145,7 +146,8 @@ class _HomeConverState extends State<HomeConver> {
     double euro = double.parse(text);
     realControl.text = (this.euro * euro).toStringAsFixed(2);
     dolarControl.text = ((this.euro * euro) / dolar).toStringAsFixed(2);
-    bitcoinControl.text = ((this.euro * euro) / bitcoin).toStringAsFixed(6);
+    var convertBitcoin = (this.euro * euro) / bitcoin;
+    bitcoinControl.text = (convertBitcoin).toStringAsFixed(_defineDecimalBitcoin(convertBitcoin));
   }
   void _convertBitcoin(String text) {
     if (text.trim().isEmpty) {
